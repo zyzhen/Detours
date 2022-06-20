@@ -11,6 +11,7 @@
 //#define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
 #include "detours.h"
+#include "_vmp.h"
 
 #if DETOURS_VERSION != 0x4c0c1   // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
@@ -1196,7 +1197,7 @@ static DWORD detour_writable_trampoline_regions()
     // Mark all of the regions as writable.
     for (PDETOUR_REGION pRegion = s_pRegions; pRegion != NULL; pRegion = pRegion->pNext) {
         DWORD dwOld;
-        if (!VirtualProtect(pRegion, DETOUR_REGION_SIZE, PAGE_EXECUTE_READWRITE, &dwOld)) {
+        if (!VirtualProtectVMP(pRegion, DETOUR_REGION_SIZE, PAGE_EXECUTE_READWRITE, &dwOld)) {
             return GetLastError();
         }
     }
@@ -1210,7 +1211,7 @@ static void detour_runnable_trampoline_regions()
     // Mark all of the regions as executable.
     for (PDETOUR_REGION pRegion = s_pRegions; pRegion != NULL; pRegion = pRegion->pNext) {
         DWORD dwOld;
-        VirtualProtect(pRegion, DETOUR_REGION_SIZE, PAGE_EXECUTE_READ, &dwOld);
+        VirtualProtectVMP(pRegion, DETOUR_REGION_SIZE, PAGE_EXECUTE_READ, &dwOld);
         FlushInstructionCache(hProcess, pRegion, DETOUR_REGION_SIZE);
     }
 }
@@ -1617,7 +1618,7 @@ LONG WINAPI DetourTransactionAbort()
     for (DetourOperation *o = s_pPendingOperations; o != NULL;) {
         // We don't care if this fails, because the code is still accessible.
         DWORD dwOld;
-        VirtualProtect(o->pbTarget, o->pTrampoline->cbRestore,
+        VirtualProtectVMP(o->pbTarget, o->pTrampoline->cbRestore,
                        o->dwPerm, &dwOld);
 
         if (!o->fIsRemove) {
@@ -1903,7 +1904,7 @@ typedef ULONG_PTR DETOURS_EIP_TYPE;
     for (o = s_pPendingOperations; o != NULL;) {
         // We don't care if this fails, because the code is still accessible.
         DWORD dwOld;
-        VirtualProtect(o->pbTarget, o->pTrampoline->cbRestore, o->dwPerm, &dwOld);
+        VirtualProtectVMP(o->pbTarget, o->pTrampoline->cbRestore, o->dwPerm, &dwOld);
         FlushInstructionCache(hProcess, o->pbTarget, o->pTrampoline->cbRestore);
 
         if (o->fIsRemove && o->pTrampoline) {
@@ -2317,7 +2318,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
     (void)pbTrampoline;
 
     DWORD dwOld = 0;
-    if (!VirtualProtect(pbTarget, cbTarget, PAGE_EXECUTE_READWRITE, &dwOld)) {
+    if (!VirtualProtectVMP(pbTarget, cbTarget, PAGE_EXECUTE_READWRITE, &dwOld)) {
         error = GetLastError();
         DETOUR_BREAK();
         goto fail;
@@ -2475,7 +2476,7 @@ LONG WINAPI DetourDetach(_Inout_ PVOID *ppPointer,
     }
 
     DWORD dwOld = 0;
-    if (!VirtualProtect(pbTarget, cbTarget,
+    if (!VirtualProtectVMP(pbTarget, cbTarget,
                         PAGE_EXECUTE_READWRITE, &dwOld)) {
         error = GetLastError();
         DETOUR_BREAK();
@@ -2563,7 +2564,7 @@ BOOL WINAPI DetourVirtualProtectSameExecuteEx(_In_  HANDLE hProcess,
     if (VirtualQueryEx(hProcess, pAddress, &mbi, sizeof(mbi)) == 0) {
         return FALSE;
     }
-    return VirtualProtectEx(hProcess, pAddress, nSize,
+    return VirtualProtectExVMP(hProcess, pAddress, nSize,
                             DetourPageProtectAdjustExecute(mbi.Protect, dwNewProtect),
                             pdwOldProtect);
 }

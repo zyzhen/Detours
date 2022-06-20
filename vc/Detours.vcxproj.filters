@@ -348,6 +348,9 @@
     <ClCompile Include="..\samples\disas\x86.cpp">
       <Filter>samples\disas</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\_vmp.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\detours.h">
@@ -373,6 +376,9 @@
     </ClInclude>
     <ClInclude Include="..\samples\findfunc\target.h">
       <Filter>samples\findfunc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\_vmp.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

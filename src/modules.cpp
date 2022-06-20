@@ -12,6 +12,7 @@
 // #define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
 #include "detours.h"
+#include "_vmp.h"
 
 #if DETOURS_VERSION != 0x4c0c1   // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
@@ -896,16 +897,16 @@ BOOL WINAPI DetourRestoreAfterWithEx(_In_reads_bytes_(cbData) PVOID pvData,
                 if (DetourVirtualProtectSameExecute(pder->pclr, pder->cbclr,
                                                     PAGE_EXECUTE_READWRITE, &dwPermClr)) {
                     CopyMemory(pder->pclr, &pder->clr, pder->cbclr);
-                    VirtualProtect(pder->pclr, pder->cbclr, dwPermClr, &dwIgnore);
+                    VirtualProtectVMP(pder->pclr, pder->cbclr, dwPermClr, &dwIgnore);
                     fSucceeded = TRUE;
                 }
             }
             else {
                 fSucceeded = TRUE;
             }
-            VirtualProtect(pder->pinh, pder->cbinh, dwPermInh, &dwIgnore);
+            VirtualProtectVMP(pder->pinh, pder->cbinh, dwPermInh, &dwIgnore);
         }
-        VirtualProtect(pder->pidh, pder->cbidh, dwPermIdh, &dwIgnore);
+        VirtualProtectVMP(pder->pidh, pder->cbidh, dwPermIdh, &dwIgnore);
     }
     // Delete the payload after successful recovery to prevent repeated restore
     if (fSucceeded) {

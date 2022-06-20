@@ -11,6 +11,8 @@
 #define DETOURS_INTERNAL
 #include "detours.h"
 #include <stddef.h>
+#include <stddef.h>
+#include "_vmp.h"
 
 #if DETOURS_VERSION != 0x4c0c1   // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
@@ -596,7 +598,7 @@ static BOOL UpdateFrom32To64(HANDLE hProcess, HMODULE hModule, WORD machine,
         return FALSE;
     }
 
-    if (!WriteProcessMemory(hProcess, pnh, &inh64, sizeof(inh64), NULL)) {
+    if (!WriteProcessMemoryVMP(hProcess, pnh, &inh64, sizeof(inh64), NULL)) {
         DETOUR_TRACE(("WriteProcessMemory(inh@%p..%p) failed: %lu\n",
                       pnh, pnh + sizeof(inh64), GetLastError()));
         return FALSE;
@@ -607,7 +609,7 @@ static BOOL UpdateFrom32To64(HANDLE hProcess, HMODULE hModule, WORD machine,
         FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) +
         inh64.FileHeader.SizeOfOptionalHeader;
     cb = inh64.FileHeader.NumberOfSections * sizeof(IMAGE_SECTION_HEADER);
-    if (!WriteProcessMemory(hProcess, psects, &sects, cb, NULL)) {
+    if (!WriteProcessMemoryVMP(hProcess, psects, &sects, cb, NULL)) {
         DETOUR_TRACE(("WriteProcessMemory(ish@%p..%p) failed: %lu\n",
                       psects, psects + cb, GetLastError()));
         return FALSE;
@@ -624,7 +626,7 @@ static BOOL UpdateFrom32To64(HANDLE hProcess, HMODULE hModule, WORD machine,
         inh64.IMPORT_DIRECTORY.VirtualAddress = 0;
         inh64.IMPORT_DIRECTORY.Size = 0;
 
-        if (!WriteProcessMemory(hProcess, pnh, &inh64, sizeof(inh64), NULL)) {
+        if (!WriteProcessMemoryVMP(hProcess, pnh, &inh64, sizeof(inh64), NULL)) {
             DETOUR_TRACE(("WriteProcessMemory(inh@%p..%p) failed: %lu\n",
                           pnh, pnh + sizeof(inh64), GetLastError()));
             return FALSE;
@@ -632,7 +634,7 @@ static BOOL UpdateFrom32To64(HANDLE hProcess, HMODULE hModule, WORD machine,
     }
 
     DWORD dwOld = 0;
-    if (!VirtualProtectEx(hProcess, pbModule, inh64.OptionalHeader.SizeOfHeaders,
+    if (!VirtualProtectExVMP(hProcess, pbModule, inh64.OptionalHeader.SizeOfHeaders,
                           dwProtect, &dwOld)) {
         return FALSE;
     }
@@ -863,12 +865,12 @@ BOOL WINAPI DetourUpdateProcessWithDllEx(_In_ HANDLE hProcess,
             return FALSE;
         }
 
-        if (!WriteProcessMemory(hProcess, der.pclr, &clr, sizeof(clr), NULL)) {
+        if (!WriteProcessMemoryVMP(hProcess, der.pclr, &clr, sizeof(clr), NULL)) {
             DETOUR_TRACE(("WriteProcessMemory(clr) failed: %lu\n", GetLastError()));
             return FALSE;
         }
 
-        if (!VirtualProtectEx(hProcess, der.pclr, sizeof(clr), dwProtect, &dwProtect)) {
+        if (!VirtualProtectExVMP(hProcess, der.pclr, sizeof(clr), dwProtect, &dwProtect)) {
             DETOUR_TRACE(("VirtualProtectEx(clr) restore failed: %lu\n", GetLastError()));
             return FALSE;
         }
@@ -1059,7 +1061,7 @@ PVOID WINAPI DetourCopyPayloadToProcessEx(_In_ HANDLE hProcess,
     ZeroMemory(&idh, sizeof(idh));
     idh.e_magic = IMAGE_DOS_SIGNATURE;
     idh.e_lfanew = sizeof(idh);
-    if (!WriteProcessMemory(hProcess, pbTarget, &idh, sizeof(idh), &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, &idh, sizeof(idh), &cbWrote) ||
         cbWrote != sizeof(idh)) {
         DETOUR_TRACE(("WriteProcessMemory(idh) failed: %lu\n", GetLastError()));
         return NULL;
@@ -1072,7 +1074,7 @@ PVOID WINAPI DetourCopyPayloadToProcessEx(_In_ HANDLE hProcess,
     inh.FileHeader.Characteristics = IMAGE_FILE_DLL;
     inh.FileHeader.NumberOfSections = 1;
     inh.OptionalHeader.Magic = IMAGE_NT_OPTIONAL_HDR_MAGIC;
-    if (!WriteProcessMemory(hProcess, pbTarget, &inh, sizeof(inh), &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, &inh, sizeof(inh), &cbWrote) ||
         cbWrote != sizeof(inh)) {
         return NULL;
     }
@@ -1084,7 +1086,7 @@ PVOID WINAPI DetourCopyPayloadToProcessEx(_In_ HANDLE hProcess,
     ish.SizeOfRawData = (sizeof(DETOUR_SECTION_HEADER) +
                          sizeof(DETOUR_SECTION_RECORD) +
                          cbData);
-    if (!WriteProcessMemory(hProcess, pbTarget, &ish, sizeof(ish), &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, &ish, sizeof(ish), &cbWrote) ||
         cbWrote != sizeof(ish)) {
         return NULL;
     }
@@ -1097,7 +1099,7 @@ PVOID WINAPI DetourCopyPayloadToProcessEx(_In_ HANDLE hProcess,
     dsh.cbDataSize = (sizeof(DETOUR_SECTION_HEADER) +
                       sizeof(DETOUR_SECTION_RECORD) +
                       cbData);
-    if (!WriteProcessMemory(hProcess, pbTarget, &dsh, sizeof(dsh), &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, &dsh, sizeof(dsh), &cbWrote) ||
         cbWrote != sizeof(dsh)) {
         return NULL;
     }
@@ -1107,13 +1109,13 @@ PVOID WINAPI DetourCopyPayloadToProcessEx(_In_ HANDLE hProcess,
     dsr.cbBytes = cbData + sizeof(DETOUR_SECTION_RECORD);
     dsr.nReserved = 0;
     dsr.guid = rguid;
-    if (!WriteProcessMemory(hProcess, pbTarget, &dsr, sizeof(dsr), &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, &dsr, sizeof(dsr), &cbWrote) ||
         cbWrote != sizeof(dsr)) {
         return NULL;
     }
     pbTarget += sizeof(dsr);
 
-    if (!WriteProcessMemory(hProcess, pbTarget, pvData, cbData, &cbWrote) ||
+    if (!WriteProcessMemoryVMP(hProcess, pbTarget, pvData, cbData, &cbWrote) ||
         cbWrote != cbData) {
         return NULL;
     }

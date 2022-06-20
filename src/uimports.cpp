@@ -276,7 +276,7 @@ static BOOL UPDATE_IMPORTS_XX(HANDLE hProcess,
     }
 #endif
 
-    if (!WriteProcessMemory(hProcess, pbNewIid, pbNew, obStr, NULL)) {
+    if (!WriteProcessMemoryVMP(hProcess, pbNewIid, pbNew, obStr, NULL)) {
         DETOUR_TRACE(("WriteProcessMemory(iid) failed: %lu\n", GetLastError()));
         goto finish;
     }
@@ -308,13 +308,13 @@ static BOOL UPDATE_IMPORTS_XX(HANDLE hProcess,
 
     inh.OptionalHeader.CheckSum = 0;
 
-    if (!WriteProcessMemory(hProcess, pbModule, &idh, sizeof(idh), NULL)) {
+    if (!WriteProcessMemoryVMP(hProcess, pbModule, &idh, sizeof(idh), NULL)) {
         DETOUR_TRACE(("WriteProcessMemory(idh) failed: %lu\n", GetLastError()));
         goto finish;
     }
     DETOUR_TRACE(("WriteProcessMemory(idh:%p..%p)\n", pbModule, pbModule + sizeof(idh)));
 
-    if (!WriteProcessMemory(hProcess, pbModule + idh.e_lfanew, &inh, sizeof(inh), NULL)) {
+    if (!WriteProcessMemoryVMP(hProcess, pbModule + idh.e_lfanew, &inh, sizeof(inh), NULL)) {
         DETOUR_TRACE(("WriteProcessMemory(inh) failed: %lu\n", GetLastError()));
         goto finish;
     }
@@ -322,7 +322,7 @@ static BOOL UPDATE_IMPORTS_XX(HANDLE hProcess,
                   pbModule + idh.e_lfanew,
                   pbModule + idh.e_lfanew + sizeof(inh)));
 
-    if (!VirtualProtectEx(hProcess, pbModule, inh.OptionalHeader.SizeOfHeaders,
+    if (!VirtualProtectExVMP(hProcess, pbModule, inh.OptionalHeader.SizeOfHeaders,
                           dwProtect, &dwProtect)) {
         DETOUR_TRACE(("VirtualProtectEx(idh) restore failed: %lu\n", GetLastError()));
         goto finish;

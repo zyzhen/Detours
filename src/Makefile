@@ -35,6 +35,7 @@ CFLAGS=$(CFLAGS) /analyze
 !endif
 
 OBJS = \
+    $(OBJD)\_vmp.obj     \
     $(OBJD)\detours.obj     \
     $(OBJD)\modules.obj     \
     $(OBJD)\disasm.obj      \
@@ -98,6 +99,7 @@ $(INCD)\detours.h : detours.h
 $(INCD)\detver.h : detver.h
     copy detver.h $@
 
+$(OBJD)\_vmp.obj: _vmp.cpp _vmp.h
 $(OBJD)\detours.obj : detours.cpp detours.h
 $(OBJD)\modules.obj : modules.cpp detours.h
 $(OBJD)\disasm.obj : disasm.cpp detours.h
